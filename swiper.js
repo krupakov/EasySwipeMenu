@@ -4,6 +4,7 @@ class EasySwipeMenu {
 	static #startTransform
 	static #swipeFromEdge 
 	static #swipeIsActive
+	static #closed
 
 	constructor(options) {
 		/* Public class fields */
@@ -15,6 +16,7 @@ class EasySwipeMenu {
 		this.maxMenuWidth = options.maxMenuWidth || '300px'
 		this.timingFunction = options.timingFunction || 'ease'
 		this.transitionDuration = options.transitionDuration || 300
+		this.transitionProperty = options.transitionProperty || 'transform'
 
 		/* Setting initial style of the menu element */
 		this.menu.style =
@@ -25,7 +27,7 @@ class EasySwipeMenu {
 			max-width: ${this.maxMenuWidth};
 			transform: translateX(-101%);
 			transition-timing-function: ${this.timingFunction};
-			transition-property: transform;
+			transition-property: ${this.transitionProperty};
 		`
 		setTimeout(() => this.menu.style.transitionDuration = `${this.transitionDuration}ms`)
 
@@ -38,31 +40,38 @@ class EasySwipeMenu {
 		document.addEventListener('mousemove', EasySwipeMenu.swipemove.bind(this), false)
 		document.addEventListener('mouseup', EasySwipeMenu.swipeend.bind(this), false)
 
+		/* Open menu with button */
 		this.menuButton.addEventListener('click', function() {
-			/* Open menu with button */
-			if (this.enableIfTrue()) {
+			if (this.enableIfTrue() && EasySwipeMenu.#closed) {
 				this.menu.style.transitionDuration = `${this.transitionDuration}ms`
 				this.menu.style.transform = 'translateX(0%)'
 
-				this.onSwipeEnd('opened')
+				this.onOpened()
 			}
 		}.bind(this), false)
 	}
 
-	enableIfTrue() {
+	enableIfTrue(event) {
 		return true
 	}
 	onSwipeStart() {
 		return true
 	}
-	onSwipeEnd(status) {
+	onSwipeEnd() {
+		return true
+	}
+	onOpened() {
+		return true
+	}
+	onClosed() {
 		return true
 	}
 
 	static swipestart(e) {
 		EasySwipeMenu.#startX = EasySwipeMenu.#startY = EasySwipeMenu.#startTransform = undefined
 		EasySwipeMenu.#swipeFromEdge = EasySwipeMenu.#swipeIsActive = false
-		if (this.enableIfTrue()) {
+		EasySwipeMenu.#closed = this.menu.style.transform == 'translateX(-101%)'
+		if (this.enableIfTrue(e)) {
 			if (e.buttons != 1 && e.buttons !== undefined) return
 			let obj = (e.type === "mousedown") ? e : e.changedTouches[0]
 			EasySwipeMenu.#startX = obj.pageX
@@ -73,7 +82,7 @@ class EasySwipeMenu {
 	}
 
 	static swipemove(e) {
-		if (EasySwipeMenu.#startX && EasySwipeMenu.#startY && EasySwipeMenu.#startTransform != undefined) {
+		if (EasySwipeMenu.#startX && EasySwipeMenu.#startY && EasySwipeMenu.#startTransform !== undefined) {
 			if (e.buttons != 1 && e.buttons !== undefined) return
 			let obj = (e.type === "mousemove") ? e : e.changedTouches[0]
 			let transformShift = Number(((obj.pageX - EasySwipeMenu.#startX) / window.innerWidth * 100).toFixed(2)),
@@ -101,42 +110,40 @@ class EasySwipeMenu {
 	}
 
 	static swipeend(e) {
-		let shift = Number(this.menu.style.transform.replace(/[^0-9\.-]+/g, '')) / -101
+		let transform = Number(this.menu.style.transform.replace(/[^0-9\.-]+/g, ''))
+		let shift = transform / -101
 
-		if (shift == 1) {
-			this.onSwipeEnd('closed')
-
-			return
-		}
-		if (shift == 0) {
+		if (EasySwipeMenu.#swipeIsActive) {
+			this.onSwipeEnd()
+		} else {
 			/* Close menu on click outside of menu */
-			if (e.target.closest(`#${this.menuId}`) === null
+			if (!EasySwipeMenu.#closed
+				&& e.target.closest(`#${this.menuId}`) === null
 				&& e.target.closest(`#${this.menuButtonId}`) === null) {
 				this.menu.style.transitionDuration = `${this.transitionDuration}ms`
 				this.menu.style.transform = 'translateX(-101%)'
+				this.onClosed()
 			}
-
-			this.onSwipeEnd('closed')
-
-			return
 		}
-		
-		if (shift > 0.9) {
-			this.menu.style.transitionDuration = `${Math.ceil(this.transitionDuration * (1 - shift))}ms`
-			this.menu.style.transform = 'translateX(-101%)'
-			this.onSwipeEnd('closed')
-		} else if (shift < 0.1) {
-			this.menu.style.transitionDuration = `${Math.ceil(this.transitionDuration * shift)}ms`
-			this.menu.style.transform = 'translateX(0%)'
-			this.onSwipeEnd('opened')
-		} else if (EasySwipeMenu.#startTransform <= -50) {
-			this.menu.style.transitionDuration = `${(this.transitionDuration - Math.ceil(this.transitionDuration * (1 - shift)))}ms`
-			this.menu.style.transform = 'translateX(0%)'
-			this.onSwipeEnd('opened')
-		} else {
-			this.menu.style.transitionDuration = `${(this.transitionDuration - Math.ceil(this.transitionDuration * shift))}ms`
-			this.menu.style.transform = 'translateX(-101%)'
-			this.onSwipeEnd('closed')
+
+		if (transform !== EasySwipeMenu.#startTransform && EasySwipeMenu.#startTransform !== undefined) {
+			if (shift > 0.9) {
+				this.menu.style.transitionDuration = `${Math.ceil(this.transitionDuration * (1 - shift))}ms`
+				this.menu.style.transform = 'translateX(-101%)'
+				this.onClosed()
+			} else if (shift < 0.1) {
+				this.menu.style.transitionDuration = `${Math.ceil(this.transitionDuration * shift)}ms`
+				this.menu.style.transform = 'translateX(0%)'
+				this.onOpened()
+			} else if (EasySwipeMenu.#startTransform <= -50) {
+				this.menu.style.transitionDuration = `${Math.ceil(this.transitionDuration * shift)}ms`
+				this.menu.style.transform = 'translateX(0%)'
+				this.onOpened()
+			} else {
+				this.menu.style.transitionDuration = `${Math.ceil(this.transitionDuration * (1 - shift))}ms`
+				this.menu.style.transform = 'translateX(-101%)'
+				this.onClosed()
+			}
 		}
 	}
 }

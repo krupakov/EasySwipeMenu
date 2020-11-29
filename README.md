@@ -16,10 +16,11 @@ const menu = new EasySwipeMenu({
 
 NOTE: both elements must have an id field.
 
-You also can override 3 class methods:
+You can override 5 class methods (optional):
 
 ```js
-menu.enableIfTrue = () => {
+menu.enableIfTrue = (event) => {
+  /* Your condition */
   const condition = true && true
   
   if (condition) {
@@ -28,24 +29,34 @@ menu.enableIfTrue = () => {
   
   return false
 }
+
 menu.onSwipeStart = () => {
   console.log('Started.')
 }
 
-menu.onSwipeEnd = (status) => {
-  console.log('Finished. Status:', status) // 'closed', 'opened'
+menu.onSwipeEnd = () => {
+  console.log('Finished.')
+}
+
+menu.onOpened = () => {
+  console.log('Menu opened.')
+}
+
+menu.onClosed = () => {
+  console.log('Menu closed.')
 }
 ```
 
-And there is some more, but the are optional:
+And there is some more, but they are also optional:
 
 ```js
 const menu = new EasySwipeMenu({
   menu: document.querySelector('#menu'),
   menuButton: document.querySelector('#button'),
-  menuWidth: '80%', //%
-  maxMenuWidth: '300px', //any
+  menuWidth: '80%', // %
+  maxMenuWidth: '300px', // any
   timingFunction: 'ease',
-  transitionDuration: 300 //ms
+  transitionProperty: 'transform',
+  transitionDuration: 300 // ms
 })
 ```

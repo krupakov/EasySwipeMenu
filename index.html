@@ -54,9 +54,14 @@
 		menu.onSwipeStart = () => {
 			console.log('Started.')
 		}
-
-		menu.onSwipeEnd = (status) => {
-			console.log('Finished. Status:', status)
+		menu.onSwipeEnd = () => {
+			console.log('Finished.')
+		}
+		menu.onOpened = () => {
+			console.log('Menu opened.')
+		}
+		menu.onClosed = () => {
+			console.log('Menu closed.')
 		}
 	</script>
 </body>
